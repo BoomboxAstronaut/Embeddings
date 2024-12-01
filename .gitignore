@@ -1,5 +1,13 @@
 test
 word_list
 word_list_i
-models/*
+src/models/*
 data/*
+notes/*
+docs/*
+sandbox/env/*
+*__pycache__*
+*\.git*
+*\.vscode*
+env/*
+research

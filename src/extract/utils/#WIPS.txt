@@ -1,0 +1,623 @@
+#WIPS
+
+
+#Defrenching
+
+for x in w.bases:
+    if len(x) < 6: continue
+    if x.endswith('aine'):
+        if f'{x[:-3]}n' in a.bare:
+            if f'{x[:-3]}n' in sinks: print('SSS', f'{x[:-3]}n', x)
+            else: print('S', f'{x[:-3]}n', x)
+    elif x.endswith('aire'):
+        if f'{x[:-3]}ry' in a.bare:
+            if f'{x[:-3]}ry' in sinks: print('SSS', f'{x[:-3]}ry', x)
+            else: print('S', f'{x[:-3]}ry', x)
+    elif x.endswith('ique'):
+        if f'{x[:-3]}c' in a.bare:
+            if f'{x[:-3]}c' in sinks: print('SSS', f'{x[:-3]}c', x)
+            else: print('S', f'{x[:-3]}c', x)
+    elif x.endswith('iel'):
+        if f'{x[:-2]}al' in a.bare:
+            if f'{x[:-2]}al' in sinks: print('SSS', f'{x[:-2]}al', x)
+            else: print('S', f'{x[:-2]}al', x)
+    elif x.endswith('o'):
+        if f'{x[:-1]}al' in a.bare:
+            if f'{x[:-1]}al' in sinks: print('SSS', f'{x[:-1]}al', x)
+            else: print('S', f'{x[:-1]}al', x)
+        elif f'{x[:-1]}ic' in a.bare:
+            if f'{x[:-1]}ic' in sinks: print('SSS', f'{x[:-1]}ic', x)
+            else: print('S', f'{x[:-1]}ic', x)
+    elif x.endswith('eur'):
+        if f'{x[:-3]}or' in a.bare:
+            if f'{x[:-3]}or' in sinks: print('SSS', f'{x[:-3]}or', x)
+            else: print('S', f'{x[:-3]}or', x)
+    elif x.endswith('ia'):
+        if f'{x[:-2]}y' in a.bare:
+            if f'{x[:-2]}y' in sinks: print ('SSS', f'{x[:-2]}y', x)
+            else: print('S', f'{x[:-2]}y', x)
+
+
+
+#Phonemes
+
+def vextract():
+    e1 = ['ing', 'ed', 'er', 'or', 's'] #normal
+    e2 = ['ing', 'ed', 'er', 'or', 'es'] #s end e end 
+    e3 = ['ying', 'ied', 'ier', 'or', 'ies'] #y 
+    e4 = ['king', 'kied', 'ker', 'kor', 'ks'] #c
+    e5 = ['ing', 'd', 'r', 's'] #vv
+    e6 = ['ving', 'ved', 'ver', 'ves'] #f
+
+    vfin = {}
+    for x in sorted(verbs, key=lambda x: (x, len(x))):
+        xa = x
+        if len(x) >= 3 and x[-1] in 'bdglmnprt' and x[-2] in 'aeiou' and x[-3] not in 'aeiou':
+            eselect = [*[f'{x[-1]}{z}' if z != 's' else z for z in e1], *e1]
+        elif x[-1] == 'e':
+            xa = x[:-1]
+            eselect = e2
+        elif x[-1] == 's':
+            eselect = e2
+        elif x[-1] == 'y' and x[-2] not in 'aeiou':
+            xa = x[:-1]
+            eselect = e3
+        elif x[-1] == 'c':
+            eselect = [*e4, *e1]
+        elif x[-1] in 'aeiou' and x[-2] in 'aeiou':
+            eselect = [*e5, *e2]
+        elif x[-1] == 'f' and x[-2] != 'f':
+            eselect = [*e6, *[f"{x[-1]}{z}" for z in e1]]
+            xa = x[:-1]
+        else: eselect = e1
+        if x[-1] in 'xhz': eselect = [*eselect, 'es']
+
+        xl = len(xa)
+        tgroup = [y for y in ssearch(xa, mxln=xl+5) if y != x and any(y.endswith(z) for z in eselect)]
+        tgroup = [f'{xa}{z}' for z in eselect if f'{xa}{z}' in tgroup]
+        vfin[x] = tuple(tgroup)
+    return vfin
+
+def vrep(word):
+    for i, x in enumerate(word[:-2]):
+        if i == 0: continue
+        if x in 'aeiou' and word[i+1] in 'aeiou':
+            if word[i+2] in 'aeiou': vowel = word[i:i+3]
+            else: vowel = word[i:i+2]
+    return [word.replace(vowel, vr) for vr in vwls if vr != vowel and word.replace(vowel, vr) in a.bare]
+
+def phoneme_prep(emes, out=1):
+    """
+    Parse a list of phonemes for breaking down a domain of language
+    1: Returns phonemes prepped for use
+    2: Returns raw phonemes
+    """
+    cpre, cmid, csuf = [], [], []
+    for x in emes:
+        if len(x) == 1:
+            if x[0][-1] == '_': csuf.append(x[0].strip('_'))
+            elif x[0][0] == '_': cpre.append(x[0].strip('_'))
+            else:
+                if x[0][-1] in 'aeiouy': cmid.append(x[0][:-1])
+                cmid.append(x[0])
+        else:
+            for y in x:
+                if y[-1] == '_': csuf.append(y.strip('_'))
+                elif y[0] == '_': cpre.append(y.strip('_'))
+                else:
+                    if y[-1] in 'aeiouy': cmid.append(y[:-1])
+                    cmid.append(y)
+
+    phonemes = [*cpre, *cmid, *csuf]
+    fonly = sorted({*cpre, *cmid}, key=lambda x: (len(x), x))[::-1]
+    bkers = sorted({*phonemes, *[x[:-1] for x in csuf if x[-1] in 'ey']}, key=lambda x: (len(x), x))[::-1]
+    bonly = sorted({*csuf, *cmid}, key=lambda x: (len(x), x))[::-1]
+    if out == 1: return fonly, bkers, bonly
+    elif out == 2: return cpre, cmid, csuf
+
+
+#Filters
+def valys(targets, limit):
+    for x in targets:
+        print(x, x[:-1], '\n')
+        variants = [f'{x[:-1]}{y}' for y in 'aeiou']
+        cprint([a.search(y, exc=[z for z in variants if z != y])[:limit] for y in variants], [0, 2])
+        print('\n')
+
+def get_candidate_words(wlst, emes, score_min=0.5):
+    """
+    Search through a corpus for words that might be a part of a domain.
+    Phonemes used define the corpus
+    Min score:
+        sum(length of all phonemes found in word) / length of word
+    # This can be > 1 if phonemes overlap
+    """
+    cpre, cmid, csuf = phoneme_prep(emes, 2)
+    viable = {}
+    for word in wlst:
+        matches = []
+        matches.extend([y for y in cpre if word.startswith(y)])
+        matches.extend([y for y in csuf if word.endswith(y)])
+        matches.extend([y for y in cmid if y in word])
+        points = sum([len(x) for x in matches])
+        if points / len(word) >= score_min:
+            viable[word] = (points, tuple(matches))
+    return sorted(viable, key=lambda x: (len(x), x))[::-1]
+
+def slide_search(word, wlst):
+    cnt = Counter()
+    highest = 0
+    hword = ''
+    for i in range(0, 4):
+        for j in range(2, len(word)):
+            if j-i < 3: continue
+            wfrag = word[i:j]
+            tln = len(wfrag)
+            total = [tln for wx in wlst if wfrag in wx]
+            if len(total) > highest:
+                hword = wfrag
+                highest = len(total)
+            total = sum(total)
+            if total: cnt[wfrag] += total * tln
+    if len(cnt) == 0: return
+    if cnt.most_common()[0][0] == hword: return (hword,)
+    else: return (cnt.most_common()[0][0], hword)
+
+def choose(*args, show=False):
+    cnt = 0
+    for k in [z[0] for z in doubles if any(y == z[1] for y in args)]:
+        group = [z for z in doubles if z[0] == k]
+        for g in group:
+            if g[1] in args: continue
+            doubles.remove(g)
+            closed.remove(g)
+            fincnt[g[0]] -= 1
+            cnt += 1
+            #if show: print(f'Removing {g}')
+    if show: print('Choose:', len(args), '/', cnt)
+
+def pick_seq(good_seq: str | tuple, *args: tuple, show=False):
+    """
+    Complicated filter.
+    Input a valid sequence and invalid sequence(s).
+    Search through duplicate entries for any items containing the valid or invalid sequences.
+    Replace invalid sequence in the entry with the valid sequence.
+    If the items are the same remove the item with the invalid sequence.
+    """
+    cnt = 0
+    if isinstance(good_seq, str): good_seq = (good_seq,)
+    for x in {x for x in doubles if good_seq[0] in x[1]}:
+        tmp = list(x[1])
+        aid = tmp.index(good_seq[0])
+        eflag = False
+        if len(good_seq) > 1:
+            for i, y in enumerate(good_seq[1:]):
+                if aid+1+i >= len(tmp):
+                    eflag = True
+                    break
+                if tmp[aid+1+i] != y:
+                    eflag = True
+                    break
+        if eflag: continue
+        for y in args:
+            tmp1 = (x[0], (*tmp[:aid], *y, *tmp[aid+len(good_seq):]))
+            if tmp1 in doubles:
+                doubles.remove(tmp1)
+                closed.remove(tmp1)
+                fincnt[x[0]] -= 1
+                cnt += 1
+                #if show: print(f'Removing {tmp1}')
+    if show: print(good_seq, cnt)
+
+def prefer(*args, show=False):
+    cnt = 0
+    for k in [z[0] for z in doubles if any(y in z[1] for y in args)]:
+        group = [z for z in doubles if z[0] == k]
+        if any(all(z in g[1] for g in group) for z in args): continue
+        for g in group:
+            if any(z in g[1] for z in args): continue      
+            doubles.remove(g)
+            closed.remove(g)
+            fincnt[g[0]] -= 1
+            cnt += 1
+            #if show: print(f'Removing {g}')
+    if show: print(*args, cnt)
+
+def multi_prefer(*args, show=False):
+    cnt = 0
+    for arg in args:
+        for x in [x for x in doubles if arg[0] in x[1]]:
+            tmp = list(x[1])
+            aid = tmp.index(arg[0])
+            if len(x[1]) <= aid+len(arg): continue
+            if all(y == tmp[aid+i] for i, y in enumerate(arg)):
+                group = [y for y in doubles if y[0] == x[0]]
+                for g in group:
+                    if g[1] == x[1]: continue
+                    doubles.remove(g)
+                    closed.remove(g)
+                    fincnt[g[0]] -= 1
+                    cnt += 1
+                    #if show: print(f'Removing {g}')
+    if show: print('Multi:', cnt)
+
+def dedupe1(show=False):
+    """
+    Identify duplicates that use auto vowel drop instead of the long form of a phoneme.
+    """
+    cnt = 0
+    for x in {x for x in doubles if '~_' in x[1]}:
+        tmp = list(x[1])
+        tlidx = [i for i, z in enumerate(tmp) if z == '~_']
+        eflag = False
+        for vowel in 'aeiou':
+            for tid in  tlidx:
+                tmp1 = (x[0], (*tmp[:tid-1], f'{tmp[tid-1]}{vowel}', *tmp[tid+1:]))
+                tmp2 = (x[0], (*tmp[:tid], f'{vowel}{tmp[tid+1]}', *tmp[tid+2:]))
+                for item in (tmp1, tmp2):
+                    if item in doubles:
+                        cnt += 1
+                        fincnt[x[0]] -= 1
+                        closed.remove(x)
+                        doubles.remove(x)
+                        #if show: print(f'Removing {x}\nKeeping {item}')
+                        eflag = True
+                    if eflag: break
+                if eflag: break
+            if eflag: break
+    print('dd1', cnt)
+
+def dedupe2(show=False):
+    """
+    Identify duplicates that dont use auto vowel drop and select them over versions that do.
+    """
+    cnt = 0
+    for x in fincnt.items():
+        if x[1] == 1: continue
+        group = [z for z in doubles if x[0] == z[0]]
+        for g in group:
+            if '~_' in g[1]: continue
+            for g in group:
+                if '~_' not in g[1]: continue
+                doubles.remove(g)
+                closed.remove(g)
+                fincnt[g[0]] -= 1
+                cnt += 1
+                #if show: print(f'Removing {g}')
+            break
+    print('dd2', cnt)
+
+def dedupe_group():
+    show = True
+    dedupe1()
+    dedupe2()
+
+    prefer('sulfur', 'sulphur', show=show)
+    prefer('ation', show=show)
+    prefer('benzo', show=show)
+    prefer('ium', show=show)
+    prefer('oid', show=show)
+
+    pick_seq('amine', ('am', 'ine'), show=show)
+    pick_seq('amide', ('am', 'ide'), show=show)
+    pick_seq('amin', ('am', 'in'), show=show)
+    pick_seq('amid', ('am', 'id'), show=show)
+    pick_seq('oxy', ('ox', '_'), show=show)
+    pick_seq('folia', ('foli', '_'), show=show)
+    pick_seq('ous', ('~_', '_'), show=show)
+    pick_seq(('ic', 'os', 'is'), ('icos', 'is'))
+    pick_seq(('alk', 'al'), ('al', 'kal'))
+    pick_seq('ify', ('if', '_'))
+
+    pick_seq(('hydr', 'ox', 'yl'), ('hydro', 'xyl'), show=show)
+    pick_seq(('andr', 'ous'), ('andro', '_'), show=show)
+    choose(('chol', '~_', 'calc', 'if', 'er', 'ol'), ('eicos', '~_', 'tetra', 'en', 'oic'), ('cyst', 'ein', 'yl'), ('ana', 'tox', 'in'), ('acr', 'ol', 'ein'), ('lipo', 'ic'), ('cannab', '~_', 'di', 'ol'), ('an', 'hydr', 'ous'), ('hydro', 'sil', 'yl', 'ation'), ('ferro', 'sil', 'ic', 'on'), ('non', 'ferr', 'ous'), ('per', 'alk', 'al', 'ine'), ('hypo', 'al', 'er', 'gen', 'ic'), ('meth', 'yl', 'mercury'), ('fluor', 'esc', 'ein'), show=show)
+    multi_prefer(('al', 'erg', 'en'), ('tetra', 'meth'), ('tetra', 'mer'), ('penta', 'mer'), show=show)
+
+
+    update_closed()
+    if frun:
+        otrk = (len(viable), len(fincnt), len(fails))
+        dtrk = (len(doubles), len(singles))
+        cnt0 = fincnt.copy()
+        print(f'total: {len(viable)}  success: {len(fincnt)}  fail: {len(fails)}')
+        print(f'double: {len(doubles)}  single: {len(singles)}')
+        frun = False
+    else:
+        print(f'total 𝚫: {len(viable)-otrk[0]}  success 𝚫: {len(fincnt)-otrk[1]}  fail 𝚫: {len(fails)-otrk[2]}')
+        print(f'double: {len(doubles)-dtrk[0]}  single: {len(singles)-dtrk[1]}')
+
+    for x in [*[x for x in singles.items() if '~_' == x[1][-1] and x[1][-2] != 'phyl'],
+        *[x for x in singles.items() if len(x[1]) == 1],
+        *[x for x in singles.items() if '_' == x[1][-1] and x[1][-2] == '~_']]:
+        singles.pop(x[0])
+    for x in 'aniconic alla ally alls aman amate amazon amis amphora anal analis anally anatase anethole anic anion anis anise anole anon aramid areal arise armer aroma arose arsenal azalea baritone bian bikinis boreal cholla deaden deal dean deicide deify dial dials deals diamond diesis endian feral ferox ferris formal galliform genial halal ligand philol riband ribald trial undecided urinal'.split():
+        singles.pop(x)
+    for x in 'arous america arbor areol barb baron bion bord bore biot bison crit cyclone dean defer dein diaper dialer energ ethic ferrul ferul formalis formaliz galle gallo gallin gener genit merit organi pallia parad perform peril period perit platform plato propo protest pyramid sill seria serio transit tribu'.split():
+        for y in a.search(x, corpus=singles):
+            singles.pop(y)
+
+    multi_rem(('~_', 'an'))
+
+#Breakdown Tools
+def multi_rem(*args):
+    for arg in args:
+        for x in [x for x in singles.items() if arg[0] in x[1]]:
+            tmp = list(x[1])
+            aid = tmp.index(arg[0])
+            if len(x[1]) < aid+len(arg): continue
+            if all(y == tmp[aid+i] for i, y in enumerate(arg)):
+                singles.pop(x[0])
+
+def update_closed():
+    for q in doubles[::-1]:
+        if fincnt[q[0]] == 1:
+            doubles.remove(q)
+            singles[q[0]] = q[1]
+
+def deconstr(wlst, emes, tails=('d', 'r', 's', 'y', 'a', 'us', 'um', 'ia', 'ea'), peek=None):
+    """
+    Domain wise word deconstructor.
+    """
+    #fonly, bkers, bonly = phoneme_prep(emes)
+    fonly, bkers, bonly = emes, [], []
+    fins = []
+    fails = {}
+    for word in wlst:
+        skip = False
+        for end in (*tails, ''):
+            if word.endswith(end):
+                raw = word[:-len(end)]
+                if raw in bkers: skip = True
+                if raw in fonly: skip = True
+        if skip: continue
+
+        ways = [(word, tuple())]
+        first, complete = True, False
+        fgroup = []
+        while ways:
+            x, track = ways.pop()
+            found = False
+            for y in (fonly if first else bkers):
+                if x == y:
+                    if y in bonly:
+                        found, complete = True, True
+                        fins.append((word, (*track, y)))
+                elif x in tails:
+                    found, complete = True, True
+                    fins.append((word, (*track, '_')))
+                elif x.startswith(y):
+                    if word == peek: print(word, x, y, ways)
+                    found = True
+                    tmp = x[len(y):]
+                    ways.append((tmp, (*track, y)))
+                    if tmp[0] in 'aeio' and len(tmp) > 2:
+                        ways.append((tmp[1:], (*track, y, '~_')))
+                    elif tmp[0] == 'l' and y[-1] == 'l':
+                        if tmp == 'l':
+                            complete = True
+                            fins.append((word, (*track, y, '~_')))
+                        else: ways.append((tmp[1:], (*track, y)))
+                    if word == peek: print(word, x, y, ways)
+            
+            if not found: fgroup.append((*track, x))
+            if not ways and not complete:
+                fails[word] = (x, tuple(fgroup))
+                break
+            else:
+                if word == peek: print(ways)
+                first = False
+    fins = [x for x in fins if len(x[1]) > 1 and (x[1][-2] in bonly if x[1][-1] == '_' else True)]
+    return sorted(list(set(fins)), key=lambda x: (len(x[0]), x[0]))[::-1], fails
+
+def decon(word, pfx, sfx=(), view=False):
+    accept, reject = [], []
+    paths = [(word, [])]
+    while paths:
+        veri = False
+        path = paths.pop()
+        for x in pfx:
+            if not path[0].startswith(x): continue
+            if not path[0] == x: paths.append((path[0][len(x):], [*path[1], x]))
+            else: accept.append((*path[1], x))
+            veri = True
+        if not veri:
+            accept.append((*path[1], path[0])) if path[0] in sfx else reject.append(path[1])
+    if accept: return accept
+    elif view: return reject
+
+#Latin / Greek
+def tlg(word):
+    #Show me modern variations of a latin or greek origin word
+    #tails = 'ensis anus inus ilis ulus alis olus osus atus icus idus aris us um ae is ei io ia er os as a e i o y x'.split()
+    #tvars = ('c', 'x', 'p')
+    t1 = 'uous ium ous os on er us um ia ae ax a'.split()
+    t2 = 'ar or ac ic an in on at it ul il os'.split()
+    t3 = 'aris arum orum icus anum atum osum alis'.split()
+    t4 = 'emia itis mania osis ensis cola arium torium'.split()
+    t5 = 'ium ous os us is as on um er ia ae a g x'.split()
+
+    everse = [(word[:-len(y)], y) for y in tails if len(word) > len(y)+1 and word.endswith(y)]
+    
+    if not everse: return
+    for ver, origy in everse[::-1]:
+        if origy in lgas:
+            for vet in lgas[origy]: everse.append(f'{ver}{vet}')
+        end = phex(ver)
+        if end not in lgas: continue
+        for vet in lgas[end]: everse.append(f'{ver[:-len(end)]}{vet}')
+        everse.remove((ver, origy))
+        everse.append(ver)
+    for ver in everse[::-1]:
+        if phex(ver) in tvars:
+            everse.append(f'{ver}t')
+    for x in everse:
+        if len(x) < 3: continue
+        print(f'\n\n\n{x}\n')
+        for y in a.search(x, exc=[z for z in everse if x in z and x != z]): print(y)
+
+def swap_test(word, sfx):
+    epack = []
+    for y in t4:
+        if y == sfx: continue
+        formas = [f'{word}{y}']
+        if phex(word, 'v') in ('i', 'u') or phex(word, 'c') == 'll': formas.append(f'{word[:-1]}{y}')
+        if word[-1] in ('c', 'x', 'p'): formas.append(f'{word}t{y}')
+        for lck in ltd_1rc:
+            if word.endswith(lck):
+                for rep in ltd_1rc[lck]:
+                    formas.append(f'{word[:-len(lck)]}{rep}{y}')
+        for form in set([q for q in formas if len(q) > 2 and q not in epack]):
+            if form not in memoir: 
+                _ = a.search(form)
+                memoir[form] = len(_)
+            if memoir[form]: epack.append(form)
+    return epack
+
+def adapt(word):
+    if len(word) < 3: return
+    if word[-1] == 'y': return f'{word[:-1]}i'
+    if word[-2:] == 'er': return f'{word[:-2]}r'
+    if word[-2:] == 'll': return f'{word[:-2]}l'
+    if word[-1] == 'e': return word[:-1]
+    if word[-1] == 'x': return f'{word[:-1]}c'
+
+
+""" wpre = [x.strip('_') for x in w.get('wpres') if len(x) > 2]
+wsuf = [x.strip('_') for x in w.get('wsufs')]
+pre_test = set([x for x in wpre])
+suf_test = set([x for x in wsuf])
+verbs = w.get('verbs', a.bare)
+nouns = w.get('nouns', a.bare)
+averbs = w.get('adverbs', a.bare)
+adjects = w.get('adjectives', a.bare) """
+
+
+
+
+#Compound Words
+singles, multies = {}, {}
+frags = {x for x in a.bare if x in w.bases and x not in w.prex and x not in w.sufx and len(x) < 10 and (len(x) > 3 or (x in ('by', 'up', 'off', 'out', 'any', 'arm') or (len(x) == 3 and x[0] not in 'aeiou')))}
+frags |= {'counter', 'ship', 'ward'}
+
+for x in [x for x in w.bases if x not in 'busby goby hobby rugby tabby'.split()]:
+    tmp = w.unisplit(x, crp=frags)
+    if tmp:
+        if len(tmp) == 1: singles[x] = tmp[0]
+        elif len(tmp) > 1: multis[x] = tuple(tmp)
+
+cnt = Counter()
+for x in [y for x in singles.items() for y in x[1]]:
+    cnt[x] += 1
+
+for x in cnt.most_common():
+    if cnt[x[0]] <= 0: continue
+    print(f'"{x[0]}"')
+    for y in singles.items():
+        if x[0] in y[1]:
+            hprint(f'{y[0]} \t:: {y[1][0]}  {y[1][1]}', x[0])
+            cnt[y[1][0]] -= 1
+            cnt[y[1][1]] -= 1
+    print('\n')
+
+
+
+with open(f'C:\\Users\\BBA\\Coding\\NLP\\Embeddings\\data\\v0\\misc\\dtest', 'rb') as f:
+    gldx, memoir = load(f)
+
+for sfx in gldx:
+    print(f'\t\t====  {sfx}  ====')
+    print('')
+    for sword in gldx[sfx]:
+        if sword not in w.bt: continue
+        if w.bt[sword][0] != sword: hprint(f'{w[sword].nmut}\t {sword}  {memoir[sword]}  REDUCED {w.bt[sword][0]}', sfx)
+        else: hprint(f'{w[sword].nmut}\t {sword}  {memoir[sword]}', sfx)
+        print('')
+        for x in gldx[sfx][sword]:
+            if x in a.bare: hprint(f'{x}: {memoir[x]}', x)
+            else: print(f'{x}: {memoir[x]}')
+        print('')
+
+
+
+
+
+#Chems
+
+with open(w.files['chems0'], 'rt') as f:
+    phones = [x.strip().split() for x in f.readlines()]
+viable = get_candidate_words(a.bare, phones)
+closed, fails = deconstr(viable, phones)
+fincnt = Counter()
+for x in closed: fincnt[x[0]] += 1
+singles = {x[0]: x[1] for x in closed if fincnt[x[0]] == 1}
+doubles = [x for x in closed if fincnt[x[0]] > 1]
+dedupe_group()
+
+solos, multis, failed = [], [], []
+for x in wpre:
+    out = decon(x, [y for y in wpre if len(y) < len(x)])
+    if not out: failed.append(x)
+    else:
+        if len(out) == 1: solos.append(out[0])
+        else: multis.append(tuple(out))
+
+pcnt, scnt = Counter(), Counter()
+for x in a.bare:
+    for p in wpre:
+        if x.startswith(p): pcnt[p] += 1
+    for s in wsuf:
+        if x.endswith(s): scnt[s] += 1
+
+for w in sorted(wpre, key=lambda x: 1/len(x)):
+    wl = len(w)
+    eflag = False
+    wtest = w.copy()
+    paths = [p for p in wpre if w.startswith(p)]
+    while paths and eflag:
+        path = paths
+        for x in wpre:
+            if len(x) >= wl: continue
+            if x not in w: continue
+            if not w.startswith(x): continue
+            rems = w.split(x)
+            if all(y in pre_test for y in rems):
+                print('multi break', w, rems[0], x, rems[1])
+
+for x in [x for x in fails.items() if any(x[0].endswith(y) for y in ('yl', 'ane', 'ase', 'one', 'ite', 'ide', 'ate')) or any(y in x[0] for y in ('phosph', 'aldehy', 'fluor', 'glyc', 'gluc', 'phth' ,'phyl', 'phyt', 'sulf', 'sulph', 'tryp'))]: print(x)
+for x in [x for x in singles.items() if '~_' in x[1]]:
+    for i, y in enumerate(x[1]):
+        if y != '~_': continue
+        if i != 0:
+            if x[1][i-1][-1] in 'aeiouy':
+                print(x)
+                break
+        if i != len(x[1])-1:
+            if x[1][i+1][0] in 'aeiouy':
+                print(x)
+                break
+for x in sorted([x for x in singles.items()], key=lambda x: (len(x[0]), x[0]))[::-1]: print(x)
+for x in sorted(singles, key=lambda y: (len(y[0]), y[0]))[::-1]:
+    if x not in w.bases and x in w.bt: print(f'NOT FOUND {x}\t REDUCED {w.bt[x][0]}')
+    elif x not in w.bases: print(f'NOT FOUND {x}')
+    else: print('FOUND\t ', x)
+
+old = sorted(fails, key=lambda x: (len(x[0]), x[0]))[::-1]
+final = []
+for f in [x[:-1] if (x[-1] in 'aeiou' and x[:-1] not in chems) else x for x in chems if len(x) > 3]:
+    track = Counter()
+    if f[-1] in 'aeiou': continue
+    for x in a.search(f):
+        if x.index(f)+len(f) < len(x) and x[x.index(f)+len(f):][0] in 'aeiou' and x[x.index(f):x.index(f)+len(f)+1] not in fchems:
+            track[x[x.index(f)+len(f):][0]] += 1
+    if track.total():
+        line = ''
+        for x in track:
+            line += f'{f}{x} '
+        final.append((f, track.most_common(), line[:-1]))
+for x in final:
+    print(x[0], x[1])
+    print(x[2])
+    for y in x[2].split():
+        print(y, a.search(y, corpus=viable)[:12])
+    print('\n')
